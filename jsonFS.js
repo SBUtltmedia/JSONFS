@@ -4,85 +4,90 @@ const path = require("path")
 
 
 class JSONFS {
+
     constructor(home = `${__dirname}/data/`) {
         this.home = home;
-
     }
 
-
-
-
-
-
-    getJSON(dirPath=this.home, out="") {
-        console.log(dirPath)
-       const files = fs.readdirSync(dirPath)
-        files.forEach((file)=> {
-            let filePath= dirPath+file
+    getJSON(dirPath = this.home) {
+        const files = fs.readdirSync(dirPath)
+        let isArray = parseInt(files[0]);
+        let container = {}
+        for (let file of files) {
+            let filePath = dirPath + file
+            isArray = this.isInt(file);
             if (fs.statSync(filePath).isDirectory()) {
-            this.getJSON(filePath+"/",out+file+".")
-
+                container[file] = this.getJSON(filePath + "/")
             } else {
-                console.log(out,filePath)
+                let fileContents = fs.readFileSync(filePath, {
+                    encoding: 'utf8',
+                    flag: 'r'
+                });
+                container[file] = fileContents;
             }
-        })
-
-     
+        };
+        if (isArray) {
+            container = Object.values(container)
+        }
+        return container;
     }
+
+   
+
+    setJSON(jsonObj, passedObject = "") {
+
+        if (jsonObj !== null && (this.dataType(jsonObj) == "object" || this.dataType(jsonObj) == "array")) {
+
+
+            Object.entries(jsonObj).forEach(([key, value]) => {
+
+
+                if (this.dataType(value) == "array") {
+
+                }
+                if (this.dataType(value) != "object" && this.dataType(value) != "array") {
+
+                    console.log(passedObject, key, value)
+
+
+                    fs.mkdirSync(this.home + passedObject, {
+                        recursive: true
+                    });
+                    fs.writeFileSync(this.home + passedObject + key, value)
+
+
+
+
+
+                } else {
+
+
+
+                    return this.setJSON(value, passedObject + key + "/");
+                }
+            });
+        }
+    }
+    isInt(value) {
+        return !isNaN(value) &&
+            parseInt(Number(value)) == value &&
+            !isNaN(parseInt(value, 10));
+    }
+
+
     dataType(jsonObj) {
         var dtype;
         if (jsonObj !== null && typeof jsonObj == "object") {
             if (Array.isArray(jsonObj)) {
                 dtype = 'array';
-            }
-            else dtype = 'object';
-        }
-        else {
+            } else dtype = 'object';
+        } else {
             dtype = 'string';
         }
         return dtype;
 
     }
 
-    setJSON(jsonObj,passedObject ="") {
-   
-        if (jsonObj !== null && (this.dataType(jsonObj) == "object" || this.dataType(jsonObj) == "array")) {
-           // let objectKey = "";
-           // let outPath = jsonfsPath;
-
-            Object.entries(jsonObj).forEach(([key, value]) => {
-                // console.log(key,value,this.dataType(value))
-         
-                if (this.dataType(value) == "array") {
-                   // outPath += key;
-                }
-                if (this.dataType(value) != "object" && this.dataType(value) != "array") {
-
-              console.log(passedObject,key,value)
-                
-               
-                    fs.mkdirSync(this.home + passedObject, { recursive: true });
-                    fs.writeFileSync(this.home + passedObject+ key, value)
-                   
-
-
-
-
-                }
-                else {
-
-                    // console.log(jsonObj)
-                    //outPath+= `${key}`;    
-                    // if (this.dataType(jsonObj) == "object") {
-                    //     objectKey = `${key}/`
-                    // }
-                   // console.log(outPath, objectKey)
-                   
-                 return    this.setJSON(value,passedObject+key+"/");
-                }
-            });
-        }
-    }
 }
 
 if (require.main === module) {
@@ -90,36 +95,32 @@ if (require.main === module) {
         "title": {
             "plain": "Send Money"
         },
-        "fieldset": [
-            {
+        "fieldset": [{
                 "label": {
                     "plain": "Personal Info Section"
                 },
-                "fieldset": [
-                    {
-                        "field": [
-                            {
-                                "label": {
-                                    "plain": "First Name"
-                                },
-                                "value": {
-                                    "plain": "Bob"
-                                },
-                                "id": "a_1"
+                "fieldset": [{
+                    "field": [{
+                            "label": {
+                                "plain": "First Name"
                             },
-                            {
-                                "label": {
-                                    "plain": "Last Name"
-                                },
-                                "value": {
-                                    "plain": "Hogan"
-                                },
-                                "id": "a_2"
-                            }
-                        ],
-                        "id": "a_8"
-                    }
-                ],
+                            "value": {
+                                "plain": "Bob"
+                            },
+                            "id": "a_1"
+                        },
+                        {
+                            "label": {
+                                "plain": "Last Name"
+                            },
+                            "value": {
+                                "plain": "Hogan"
+                            },
+                            "id": "a_2"
+                        }
+                    ],
+                    "id": "a_8"
+                }],
                 "id": "a_5"
             },
             {
@@ -149,8 +150,7 @@ if (require.main === module) {
                         "label": {
                             "plain": ""
                         },
-                        "field": [
-                            {
+                        "field": [{
                                 "choices": {
                                     "choice": {
                                         "label": {
@@ -189,5 +189,5 @@ if (require.main === module) {
 
     let jsonFS = new JSONFS();
     //jsonFS.setJSON(testData);
-    jsonFS.getJSON();
+    console.log(JSON.stringify(jsonFS.getJSON()));
 }
